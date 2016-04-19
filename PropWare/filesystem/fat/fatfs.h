@@ -56,7 +56,7 @@ class FatFS : public Filesystem {
             /** FatFS Error 5 */   PARTITION_DOES_NOT_EXIST,
             /** FatFS Error 6 */   UNSUPPORTED_FILESYSTEM,
             /** Last FatFS error */END_ERROR       = UNSUPPORTED_FILESYSTEM
-        }    ErrorCode;
+        } ErrorCode;
 
     public:
         /**
@@ -248,7 +248,7 @@ class FatFS : public Filesystem {
                                                       0x8B, 0x8D, 0x90, 0x92, 0x97, 0x98, 0x9A, 0xAA, 0xB6, 0xBB, 0xBC,
                                                       0xC0, 0xC1, 0xC6, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCE, 0xD0, 0xD1,
                                                       0xD4, 0xD6, 0xDB, 0xDE, 0xE1, 0xE4, 0xE5, 0xEF, 0xF2, 0xFE};
-            for (auto id : PARTITION_IDS)
+            for (auto            id : PARTITION_IDS)
                 if (id == partitionId)
                     return NO_ERROR;
             return UNSUPPORTED_FILESYSTEM;
@@ -488,10 +488,10 @@ class FatFS : public Filesystem {
 
             // This function should only be called when a file or directory has
             // reached the end of its cluster chain
-            uint16_t entriesPerFatSector = (uint16_t) (1 << this->m_entriesPerFatSector_Shift);
-            uint16_t allocUnitOffset     = (uint16_t) (bufferMetadata->curTier2 % entriesPerFatSector);
-            uint16_t fatPointerAddress   = allocUnitOffset * this->m_filesystem;
-            uint32_t nextSector          = this->m_driver->get_long(fatPointerAddress, this->m_fat);
+            const uint16_t entriesPerFatSector = (uint16_t) (1 << this->m_entriesPerFatSector_Shift);
+            const uint16_t allocUnitOffset     = (uint16_t) (bufferMetadata->curTier2 % entriesPerFatSector);
+            const uint16_t fatPointerAddress   = allocUnitOffset * this->m_filesystem;
+            const uint32_t nextSector          = this->m_driver->get_long(fatPointerAddress, this->m_fat);
             if (!this->is_eoc(nextSector))
                 return INVALID_FAT_APPEND;
 
@@ -499,8 +499,7 @@ class FatFS : public Filesystem {
             newAllocUnit = this->find_empty_space(1);
 
             // Now that we know the allocation unit, write it to the FAT buffer
-            const uint16_t sectorOffset = (uint16_t) ((bufferMetadata->curTier2 %
-                    (1 << this->m_entriesPerFatSector_Shift)) * this->m_filesystem);
+            const uint16_t sectorOffset = this->get_fat_sector_offset(bufferMetadata->curTier2);
             if (FAT_16 == this->m_filesystem)
                 this->m_driver->write_short(sectorOffset, this->m_fat, (uint16_t) newAllocUnit);
             else
@@ -571,8 +570,7 @@ class FatFS : public Filesystem {
                     }
                 }
 
-                this->m_driver->write_long(allocOffset, this->m_fat, ((uint32_t) EOC_END) & EOC_MASK);
-                this->m_fatMod = true;
+                this->mark_eoc(allocOffset);
             }
 
             // If we loaded a new fat sector (and then modified it directly
@@ -589,6 +587,11 @@ class FatFS : public Filesystem {
             return retVal;
         }
 
+        void mark_eoc (uint16_t sector_offset) {
+            this->m_driver->write_long(sector_offset, this->m_fat, ((uint32_t) EOC_END) & EOC_MASK);
+            this->m_fatMod = true;
+        }
+
         PropWare::ErrorCode flush_fat () {
             PropWare::ErrorCode err;
             if (m_fatMod) {
@@ -602,9 +605,9 @@ class FatFS : public Filesystem {
         }
 
         /**
-         * @brief       Remove the linked list of allocation units from the FAT (clear space)
+         * @brief       Remove the linked list of clusters from the FAT (clear space)
          *
-         * @param[in]   head    First allocation unit
+         * @param[in]   head    First cluster
          *
          * @return      Returns 0 upon success, error code otherwise
          */
@@ -628,6 +631,41 @@ class FatFS : public Filesystem {
             this->m_fatMod = true;
 
             return NO_ERROR;
+        }
+
+        /**
+         * @brief       Trim a chain of clusters so that the provided tail is the last in the linked list
+         *
+         * @param[in]   tail    Last cluster in the FAT as part of the chain
+         *
+         * @return      Zero upon success; error code otherwise
+         */
+        PropWare::ErrorCode trim_chain (const uint32_t tail) {
+            PropWare::ErrorCode err;
+
+            if (!this->is_eoc(tail)) {
+                uint32_t firstToDelete;
+                check_errors(this->get_fat_value(tail, &firstToDelete));
+
+                // After calling `get_fat_value()`, we know the FAT has to be loaded, so we can go ahead and write to the
+                // buffer
+                this->mark_eoc(this->get_fat_sector_offset(tail));
+
+                return this->clear_chain(firstToDelete);
+            } else
+                return NO_ERROR;
+        }
+
+        /**
+         * @brief       Determine the offset in the FAT sector for a given cluster
+         *
+         * @param[in]   tier2   Cluster number
+         *
+         * @return      Byte offset of the FAT entry in the sector
+         */
+        uint16_t get_fat_sector_offset (const uint32_t tier2) {
+            const uint_fast16_t entriesPerFatSector = (uint_fast16_t) (1 << this->m_entriesPerFatSector_Shift);
+            return (uint16_t) ((tier2 % entriesPerFatSector) * this->m_filesystem);
         }
 
         void print_status (const bool printBlocks = false) const {
@@ -732,7 +770,7 @@ class FatFS : public Filesystem {
         uint32_t    m_fatSize;
         uint16_t    m_entriesPerFatSector_Shift;  // How many FAT entries are in a single sector of the FAT
         uint8_t     *m_fat;  // Buffer for FAT entries only
-        bool m_fatMod;
+        bool        m_fatMod;
 
         uint32_t m_curFatSector;  // Store the current FAT sector loaded into m_fat
         uint32_t m_dir_firstCluster;  // Store the current directory's starting cluster
