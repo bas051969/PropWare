@@ -57,8 +57,8 @@ class Scanner {
          * @brief   Construct a Scanner instance and control whether or not received characters are echoed back via the
          *          `*printer` argument.
          *
-         * @param   *scanCapable    Object capable of scanning for characters
-         * @param   *printer        If non-null, scanned characters will be echoed out this printer
+         * @param   scanCapable     Object capable of scanning for characters
+         * @param   printer         If non-null, scanned characters will be echoed out this printer
          */
         Scanner (ScanCapable &scanCapable, const Printer *printer = NULL)
                 : m_scanCapable(&scanCapable),
@@ -114,7 +114,7 @@ class Scanner {
         /**
          * @brief       Extract formatted input
          *
-         * @param[in]   &c  Object where the value that the extracted characters represent is stored.
+         * @param[in]   c   Object where the value that the extracted characters represent is stored.
          *
          * @returns     The Scanner object (`*this`)
          */
@@ -127,7 +127,7 @@ class Scanner {
         /**
          * @brief       Extract formatted input
          *
-         * @param[in]   &c  Object where the value that the extracted characters represent is stored.
+         * @param[in]   c   Object where the value that the extracted characters represent is stored.
          *
          * @returns     Error code if the input can not be converted to the desired format, 0 otherwise
          */
@@ -236,7 +236,7 @@ class Scanner {
          * @param[in]   prompt[]            User prompt which will be displayed before each attempt to read the serial
          *                                  bus
          * @param[in]   failureResponse[]   Message to be displayed after each incorrect input
-         * @param[out]  *userInput          Resulting value will be stored at this address
+         * @param[out]  userInput           Resulting value will be stored at this address
          * @param[in]   comparator          Determines whether or not the received input was valid
          */
         template<typename T>
@@ -245,12 +245,14 @@ class Scanner {
             const T   original = *userInput;
             ErrorCode err;
             do {
-                this->m_printer->puts(prompt);
+                if (this->m_printer)
+                    this->m_printer->puts(prompt);
                 err = this->get(*userInput);
                 if (NO_ERROR == err && comparator.valid(userInput))
                     return;
 
-                this->m_printer->puts(failureResponse);
+                if (this->m_printer)
+                    this->m_printer->puts(failureResponse);
                 *userInput = original;
             } while (1);
         }

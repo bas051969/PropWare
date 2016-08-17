@@ -143,7 +143,7 @@ class BlockStorage {
          *
          * @return  0 upon success, error code otherwise
          */
-        virtual ErrorCode start () const = 0;
+        virtual PropWare::ErrorCode start () const = 0;
 
         /**
          * @brief   Read a block of data from the device into RAM
@@ -153,7 +153,7 @@ class BlockStorage {
          *
          * @return      0 upon success, error code otherwise
          */
-        virtual ErrorCode read_data_block (uint32_t address, uint8_t buf[]) const = 0;
+        virtual PropWare::ErrorCode read_data_block (uint32_t address, uint8_t buf[]) const = 0;
 
         /**
          * @overload
@@ -163,7 +163,7 @@ class BlockStorage {
          *
          * @return      0 upon success, error code otherwise
          */
-        ErrorCode read_data_block (uint32_t address, const BlockStorage::Buffer *buffer) const {
+        PropWare::ErrorCode read_data_block (uint32_t address, const BlockStorage::Buffer *buffer) const {
             return this->read_data_block(address, buffer->buf);
         }
 
@@ -178,7 +178,7 @@ class BlockStorage {
          *
          * @return      0 if successful, error code otherwise
          */
-        ErrorCode reload_buffer (const BlockStorage::Buffer *buffer) const {
+        PropWare::ErrorCode reload_buffer (const BlockStorage::Buffer *buffer) const {
             return this->read_data_block(buffer->meta->curTier2Addr + buffer->meta->curTier1Offset, buffer);
         }
 
@@ -200,7 +200,7 @@ class BlockStorage {
          *
          * @return      0 upon success, error code otherwise
          */
-        ErrorCode write_data_block (uint32_t address, const BlockStorage::Buffer *buffer) const {
+        PropWare::ErrorCode write_data_block (uint32_t address, const BlockStorage::Buffer *buffer) const {
             return this->write_data_block(address, buffer->buf);
         }
 
@@ -211,7 +211,7 @@ class BlockStorage {
          *
          * @return      0 upon success, error code otherwise
          */
-        ErrorCode flush (Buffer *buffer) const {
+        PropWare::ErrorCode flush (Buffer *buffer) const {
             PropWare::ErrorCode err;
             if (buffer->meta && buffer->meta->mod) {
                 check_errors(this->write_data_block(buffer->meta->curTier2Addr + buffer->meta->curTier1Offset,
