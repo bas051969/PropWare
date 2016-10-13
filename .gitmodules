@@ -6,10 +6,10 @@
 	url = https://github.com/parallaxinc/propsideworkspace.git
 [submodule "CMakeModules"]
 	path = CMakeModules
-	url = https://github.com/DavidZemon/PropWare-Build.git
+	url = https://github.com/bas051969/PropWare-Build.git
 [submodule "libArduino"]
 	path = libArduino
-	url = https://github.com/DavidZemon/libArduino.git
+	url = https://github.com/bas051969/libArduino.git
 [submodule "Simple-Libraries"]
 	path = Simple-Libraries
 	url = https://github.com/parallaxinc/Simple-Libraries
