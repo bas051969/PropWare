@@ -28,7 +28,7 @@ list(REMOVE_ITEM LIBPROPELLERUINO_OBJECTS
     ${PROJECT_SOURCE_DIR}/libArduino/libPropelleruino/Arduino.cpp
 
     # And ignore Wire.cpp because its include headers are broken (missing file)
-    ${PROJECT_SOURCE_DIR}/libArduino/libPropelleruino/Wire.cpp
+    #${PROJECT_SOURCE_DIR}/libArduino/libPropelleruino/Wire.cpp
 )
 
 set(LIBPROPELLERUINO_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/libArduino/libPropelleruino")
